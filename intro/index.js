@@ -6,7 +6,7 @@ var vertexShaderSource = `#version 300 es
     in vec4 a_position;
 
     //all shaders have main function
-    void main(){
+    void main() {
         //gl_Position is a special variable a vertex shader is responsible for setting
         gl_Position = a_position;
     }
@@ -20,9 +20,9 @@ var fragmentShaderSource = `#version 300 es
     // we need to declare an output for the fragment shader
     out vec4 outColor;
 
-    void main(){
+    void main() {
         //Just set the output to a constant redish-purple
-        outColor = vec$(1,0,0.5,1)
+        outColor = vec4(1,0,0.5,1);
     }
 `
 function createShader(gl, type, source){
@@ -66,4 +66,30 @@ function main(){
     var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
     var positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    var position = [
+        0,0,
+        0,0.5,
+        0.7,0.5,
+    ];
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(position), gl.STATIC_DRAW);
+    var voa = gl.createVertexArray();
+    gl.bindVertexArray(voa);
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    var size = 2;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(positionAttributeLocation,size,type,normalize,stride,offset);
+    gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
+    gl.clearColor(0,0,0,0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.bindVertexArray(voa);
+    var primitiveType = gl.TRIANGLES;
+    var offset = 0;
+    var count =3;
+    gl.drawArrays(primitiveType,offset,count);
 }
+main();
