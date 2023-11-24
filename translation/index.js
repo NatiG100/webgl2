@@ -6,10 +6,15 @@ var vertexShaderSource = `#version 300 es
     in vec2 a_position;
     uniform vec2 u_resolution;
 
+    // translation to add to position
+    uniform vec2 u_translation;
+
     //all shaders have main function
     void main() {
+        // add in the translation
+        vec2 position = a_position + u_translation;
         //convert the position from pixeles to 0.0 to 1.0
-        vec2 zeroToOne = a_position/u_resolution;
+        vec2 zeroToOne = position/u_resolution;
 
         //convert from 0-1 to 0->2
         vec2 zeroToTwo = zeroToOne * 2.0;
@@ -40,22 +45,6 @@ var fragmentShaderSource = `#version 300 es
 function randomInt(range){
     return Math.floor(Math.random()*range);
 }
-
-function setRectangle(gl, x,y,width,height){
-    var x1 = x;
-    var x2 = x + width;
-    var y1 = y;
-    var y2 = y + height;
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        x1,y1,
-        x2,y1,
-        x1,y2,
-        x1,y2,
-        x2,y1,
-        x2,y2,
-    ]), gl.STATIC_DRAW);
-}
-
 
 function createShader(gl, type, source){
     var shader = gl.createShader(type);
@@ -103,6 +92,8 @@ function main(){
     // look up uniform locations
     var resolutionUnifomLocation = gl.getUniformLocation(program,"u_resolution");
     var colorLocation = gl.getUniformLocation(program, "u_color");
+    var translationLocation = gl.getUniformLocation(program, "u_translation");
+
     
     // create a buffer
     var positionBuffer = gl.createBuffer();
@@ -119,6 +110,10 @@ function main(){
     // bind it to ARRAY_BUFFER
     gl.bindBuffer(gl.ARRAY_BUFFER,positionBuffer);
 
+    //set Geometry
+
+    setGeometry(gl);
+
     // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
     var size = 2;   // 2 components per iteration
     var type = gl.FLOAT; // the data is 32bit floats
@@ -131,8 +126,6 @@ function main(){
     // First let us make some variables
     // to hold the translation, width and height of the rectangle
     var translation = [0,0]
-    var width = 100;
-    var height = 30;
     var color = [Math.random(), Math.random(), Math.random(),1];
 
     drawScene();
@@ -165,13 +158,44 @@ function main(){
         // Pass in the canvas resolution so we can convert from
         // pixels to clip space in the shader
         gl.uniform2f(resolutionUnifomLocation, gl.canvas.width, gl.canvas.height);
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        setRectangle(gl, translation[0],translation[1],width,height);
         gl.uniform4fv(colorLocation,color);
+        gl.uniform2fv(translationLocation,translation);
         var primitiveType = gl.TRIANGLES;
         var offset = 0;
-        var count = 6;
+        var count = 18;
         gl.drawArrays(primitiveType,offset,count);
     }
+}
+
+function setGeometry(gl){
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+            // left column
+            0,0,
+            30,0,
+            0,150,
+            0,150,
+            30,0,
+            30,150,
+
+            // top rung
+            30,0,
+            100,0,
+            30,30,
+            30,30,
+            100,0,
+            100,30,
+
+            //middle rung
+            30,60,
+            67,60,
+            30,90,
+            30,90,
+            67,60,
+            67,90,
+        ]),
+        gl.STATIC_DRAW
+    )
 }
 main();
