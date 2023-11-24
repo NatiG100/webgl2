@@ -57,6 +57,32 @@ function setRectangle(gl, x,y,width,height){
 }
 
 
+function createShader(gl, type, source){
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if(success){
+        return shader;
+    }
+    console.log(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return undefined;
+}
+function createProgram(gl, vertexShader, fragmentShader){
+    var program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if(success){
+        return program;
+    }
+
+    console.log(gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    return undefined;
+}
 function main(){
     //get a webgl context
     var canvas = document.querySelector("#c");
@@ -100,58 +126,52 @@ function main(){
     var stride = 0; //0 = move forward size * sizeof(type) each iteration to get the next position
     var offset = 0; //start at the beginning of the buffer
     gl.vertexAttribPointer(positionAttributeLocation,size,type,normalize,stride,offset);
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
-    // tell the webgl how to convert from clip space to pixel space
-    gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
 
-    // clear the canvas
-    gl.clearColor(0,0,0,0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // First let us make some variables
+    // to hold the translation, width and height of the rectangle
+    var translation = [0,0]
+    var width = 100;
+    var height = 30;
+    var color = [Math.random(), Math.random(), Math.random(),1];
 
-    // Tell it to use our program (pair of shaders)
-    gl.useProgram(program);
+    drawScene();
 
-    gl.bindVertexArray(voa);
+    webglLessonsUI.setupSlider('#x',{slide:updatePosition(0), max: gl.canvas.width});
+    webglLessonsUI.setupSlider('#y',{slide:updatePosition(1), max: gl.canvas.height});
 
-    // Pass in the canvas resolution so we can convert from
-    // pixels to clip space in the shader
-    gl.uniform2f(resolutionUnifomLocation, gl.canvas.width, gl.canvas.height);
-    for(var ii=0;ii<50; ++ii){
-        // setup a random rectangle
-        setRectangle(gl, randomInt(300),randomInt(300),randomInt(300),randomInt(300));
-        gl.uniform4f(colorLocation,Math.random(), Math.random(),Math.random(),1);
-        
+    function updatePosition(index){
+        return function(event,ui){
+            translation[index] = ui.value;
+            drawScene();
+        }
+    }
+
+    function drawScene(){
+        webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    
+        // tell the webgl how to convert from clip space to pixel space
+        gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
+    
+        // clear the canvas
+        gl.clearColor(0,0,0,0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    
+        // Tell it to use our program (pair of shaders)
+        gl.useProgram(program);
+    
+        gl.bindVertexArray(voa);
+    
+        // Pass in the canvas resolution so we can convert from
+        // pixels to clip space in the shader
+        gl.uniform2f(resolutionUnifomLocation, gl.canvas.width, gl.canvas.height);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        setRectangle(gl, translation[0],translation[1],width,height);
+        gl.uniform4fv(colorLocation,color);
         var primitiveType = gl.TRIANGLES;
         var offset = 0;
         var count = 6;
         gl.drawArrays(primitiveType,offset,count);
     }
-}
-function createShader(gl, type, source){
-    var shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if(success){
-        return shader;
-    }
-    console.log(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return undefined;
-}
-function createProgram(gl, vertexShader, fragmentShader){
-    var program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if(success){
-        return program;
-    }
-
-    console.log(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    return undefined;
 }
 main();
