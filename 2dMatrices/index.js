@@ -4,22 +4,11 @@ var vertexShaderSource = `#version 300 es
     //an attribute is an input (in) to a vertex shader.
     // It will receive data from a buffer
     in vec2 a_position;
-    uniform vec2 u_resolution;
     uniform mat3 u_matrix;
 
     //all shaders have main function
     void main() {
-        
-        vec2 position = (u_matrix*vec3(a_position,1)).xy;
-        //convert the position from pixeles to 0.0 to 1.0
-        vec2 zeroToOne = position/u_resolution;
-
-        //convert from 0-1 to 0->2
-        vec2 zeroToTwo = zeroToOne * 2.0;
-
-        //convert fom 0->2 to -1 to 1(clip space)
-        vec2 clipSpace = zeroToTwo - 1.0;
-        gl_Position = vec4(clipSpace*vec2(1,-1),0,1);
+        gl_Position = vec4((u_matrix * vec3(a_position,1)).xy,0,1);
     }
 `
 
@@ -88,7 +77,6 @@ function main(){
     var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
     
     // look up uniform locations
-    var resolutionUnifomLocation = gl.getUniformLocation(program,"u_resolution");
     var colorLocation = gl.getUniformLocation(program, "u_color");
     var matrixLocation = gl.getUniformLocation(program,"u_matrix");
 
@@ -123,15 +111,15 @@ function main(){
 
     // First let us make some variables
     // to hold the translation, width and height of the rectangle
-    var translation = [0,0]
+    var translation = [100,150]
     let rotationInRadians = 0;
     var scale = [1,1]
     var color = [Math.random(), Math.random(), Math.random(),1];
 
     drawScene();
 
-    webglLessonsUI.setupSlider('#x',{slide:updatePosition(0), max: gl.canvas.width});
-    webglLessonsUI.setupSlider('#y',{slide:updatePosition(1), max: gl.canvas.height});
+    webglLessonsUI.setupSlider('#x',{value:translation[0],slide:updatePosition(0), max: gl.canvas.width});
+    webglLessonsUI.setupSlider('#y',{value:translation[1],slide:updatePosition(1), max: gl.canvas.height});
     webglLessonsUI.setupSlider('#angle',{slide:updateAngle, max: 360});
     webglLessonsUI.setupSlider('#scaleX',{value:scale[0],slide:updateScale(0), min:-5,max: 5, step:0.01, precision:2});
     webglLessonsUI.setupSlider('#scaleY',{value:scale[1],slide:updateScale(1), min:-5,max: 5, step:0.01, precision:2});
@@ -176,14 +164,19 @@ function main(){
     
         // Pass in the canvas resolution so we can convert from
         // pixels to clip space in the shader
-        gl.uniform2f(resolutionUnifomLocation, gl.canvas.width, gl.canvas.height);
         gl.uniform4fv(colorLocation,color);
         
+
+        var proectionMatrix = m3.projection(gl.canvas.clientWidth, gl.canvas.clientHeight);
+        var moveOriginMatrix = m3.translation(-50,-75)
         var translationMatrix = m3.translation(translation[0],translation[1]);
         var rotationMatrix = m3.rotation(rotationInRadians);
         var scaleMatrix = m3.scaling(scale[0],scale[1]);
-        var matrix = m3.multiply(translationMatrix,rotationMatrix);
+
+        var matrix = m3.multiply(proectionMatrix,translationMatrix);
+        matrix = m3.multiply(matrix,rotationMatrix);
         matrix = m3.multiply(matrix,scaleMatrix);
+        matrix = m3.multiply(matrix,moveOriginMatrix);
         gl.uniformMatrix3fv(matrixLocation,false,matrix);
 
         var primitiveType = gl.TRIANGLES;
@@ -285,6 +278,20 @@ var m3 = {
           0, 0, 1,
         ];
       },
+      identity: function(){
+        return[
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1,
+        ]
+      },
+      projection: function(width,height){
+        return [
+            2/width, 0, 0,
+            0, -2/height, 0,
+            -1, 1, 1,
+        ]
+      }
   }
 
 
