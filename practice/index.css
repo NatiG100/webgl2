@@ -14,7 +14,15 @@ canvas {
     position: fixed;
     top: 0;
     right: 0;
+    border: 2px solid #3466bb;
+    margin: 2px;
 }
-td{
-    max-width: 40px;
+/* td{
+} */
+input{
+    width: 40px;
+}
+tr{
+    width: max-content;
+    margin-left: 10px;
 }
